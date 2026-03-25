@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+
+# Secrets & tokens
+token.json
+cookies.json
+clerk_client.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dev/reverse-engineering (not part of the CLI)
+*.har
+recon*.py
+recon_capture*.json
+browser_state.json
+analyze_capture.py
+parse_har.py
+gsyf_project/
+API_SPEC.md

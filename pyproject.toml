@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "higgsfield-cli"
+version = "0.1.0"
+description = "Higgsfield AI CLI - generate images from the terminal"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Yusuf Altunbicak"}]
+requires-python = ">=3.10"
+keywords = ["higgsfield", "ai", "image-generation", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "click>=8.0",
+    "rich>=13.0",
+    "httpx>=0.25",
+    "PyYAML>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yusufaltunbicak/higgsfield-cli"
+Repository = "https://github.com/yusufaltunbicak/higgsfield-cli"
+
+[project.scripts]
+higgsfield = "higgsfield_cli.cli:cli"
+
+[project.optional-dependencies]
+chrome = ["cryptography>=41.0"]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["higgsfield_cli"]
