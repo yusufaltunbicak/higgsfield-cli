@@ -4,6 +4,8 @@ AI image generation from the terminal using [Higgsfield](https://higgsfield.ai).
 
 Supports Nano Banana Pro, Nano Banana Flash, Seedream, Flux, and Kling models with batch generation, image-to-image, upscale, relight, and outpaint.
 
+<img src="screenshots/generate.png" alt="higgsfield generate" width="700">
+
 ## Install
 
 ```sh
@@ -56,6 +58,8 @@ higgsfield generate "cube" -m nano-banana-flash -r 1k -b 1 -y         # Fast, ch
 
 ## Models
 
+<img src="screenshots/models.png" alt="higgsfield models" width="700">
+
 | Model | Flag | Options |
 |-------|------|---------|
 | Nano Banana Pro | `-m nano-banana-pro` | `-r 4k/2k/1k` (default) |
@@ -80,6 +84,8 @@ higgsfield outpaint 1 --direction right        # Extend image borders
 ```
 
 ## History & Download
+
+<img src="screenshots/history.png" alt="higgsfield history" width="700">
 
 ```sh
 higgsfield history                             # Recent 20 jobs
