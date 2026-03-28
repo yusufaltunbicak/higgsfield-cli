@@ -5,11 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
-import httpx
 
 from .. import config as cfg
 from ..constants import ASPECT_RATIOS, DEFAULT_MODEL, MODELS, QUALITIES, RESOLUTIONS
-from ..exceptions import HiggsError
 from ..formatter import console, print_generation_progress, print_job_detail, print_jobs
 from ..serialization import to_json_envelope
 from ._common import _get_client, _handle_api_error, _wants_json
@@ -139,57 +137,19 @@ def generate(
         if not click.confirm("  Proceed?", default=True):
             raise SystemExit(0)
 
-    # Generate - try direct API first, fallback to Chrome bridge on 403
-    resp = None
-    job_ids = []
-    try:
-        resp = client.generate(
-            prompt=prompt,
-            model=model,
-            resolution=resolution,
-            quality=quality,
-            aspect_ratio=aspect,
-            batch_size=batch,
-            seed=seed,
-            use_unlim=unlim,
-            input_images=input_images,
-        )
-        job_ids = resp.all_job_ids
-    except (HiggsError, httpx.HTTPStatusError) as exc:
-        is_datadome = (
-            isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 403
-        ) or "DataDome" in str(exc) or "Forbidden" in str(exc)
-
-        if not is_datadome:
-            raise
-
-        # DataDome blocked - use Chrome bridge
-        from ..chrome_bridge import generate_via_chrome, is_available
-        if not is_available():
-            raise
-        console.print("  [yellow]Using Chrome bridge (DataDome bypass)...[/yellow]")
-        url_slug = MODELS[model][0]
-        generate_via_chrome(
-            prompt=prompt,
-            model_slug=url_slug,
-            resolution=resolution,
-            quality=quality,
-            aspect_ratio=aspect,
-            batch_size=batch,
-            use_unlim=unlim,
-        )
-        # Wait for job to appear in history
-        console.print("  Submitted via Chrome. Polling for new job...")
-        import time
-        time.sleep(5)
-        history = client.get_history(size=5)
-        new_jobs = [j for j in history if j.prompt and prompt[:20] in j.prompt]
-        if new_jobs:
-            job_ids = [j.id for j in new_jobs]
-            console.print(f"  [green]Found {len(job_ids)} job(s)[/green]")
-        else:
-            console.print("  [yellow]Job submitted but not found in history yet. Run 'higgsfield watch --all'[/yellow]")
-            return
+    # Generate - DataDome bypass is handled automatically by client._post()
+    resp = client.generate(
+        prompt=prompt,
+        model=model,
+        resolution=resolution,
+        quality=quality,
+        aspect_ratio=aspect,
+        batch_size=batch,
+        seed=seed,
+        use_unlim=unlim,
+        input_images=input_images,
+    )
+    job_ids = resp.all_job_ids
 
     if _wants_json(ctx) and no_wait:
         click.echo(to_json_envelope(resp if resp is not None else {"job_ids": job_ids}))

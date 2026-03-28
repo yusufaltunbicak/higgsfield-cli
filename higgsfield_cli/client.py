@@ -1,4 +1,10 @@
-"""HTTP client for Higgsfield API."""
+"""HTTP client for Higgsfield API.
+
+GET requests go through httpx (DataDome doesn't block them).
+POST /jobs/* requests try httpx first, and on DataDome 403 block,
+automatically fall back to Chrome's page context via AppleScript.
+Chrome is opened and configured automatically - no user action needed.
+"""
 
 from __future__ import annotations
 
@@ -39,6 +45,7 @@ class HiggsClient:
         dd = get_datadome_cookie()
         if dd:
             cookies["datadome"] = dd
+
         self._client = httpx.Client(
             base_url=API_BASE,
             headers={
@@ -291,12 +298,48 @@ class HiggsClient:
     # ------------------------------------------------------------------
 
     def _get(self, path: str, **kwargs) -> dict:
-        resp = self._client.get(path, **kwargs)
+        try:
+            resp = self._client.get(path, **kwargs)
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            raise HiggsError(
+                f"Request timed out. The API may be temporarily unavailable.\n"
+                f"Try again in a moment."
+            ) from exc
         return self._handle_response(resp)
 
-    def _post(self, path: str, **kwargs):
-        resp = self._client.post(path, **kwargs)
+    def _post(self, path: str, **kwargs) -> dict:
+        """POST with automatic DataDome bypass via Chrome browser bridge."""
+        try:
+            resp = self._client.post(path, **kwargs)
+        except (httpx.TimeoutException, httpx.ConnectError):
+            # DataDome may silently drop connections - use browser bridge
+            return self._post_via_browser(path, **kwargs)
+
+        # If DataDome blocks (403 with HTML challenge), use browser bypass
+        if resp.status_code == 403 and "<html" in resp.text[:100].lower():
+            return self._post_via_browser(path, **kwargs)
+
         return self._handle_response(resp)
+
+    def _delete(self, path: str, **kwargs):
+        resp = self._client.delete(path, **kwargs)
+        return resp
+
+    def _patch(self, path: str, **kwargs):
+        resp = self._client.patch(path, **kwargs)
+        return resp
+
+    def _post_via_browser(self, path: str, **kwargs) -> dict:
+        """Execute POST request through Chrome's page context.
+
+        Automatically ensures Chrome has a higgsfield.ai tab, then
+        drives the UI to submit the request. DataDome is bypassed
+        because the request goes through Chrome's real page context.
+        """
+        from .browser_bridge import post_via_browser
+        url = f"{API_BASE}{path}"
+        body = kwargs.get("json", {})
+        return post_via_browser(url, body, self._token)
 
     def _handle_response(self, resp: httpx.Response):
         if resp.status_code == 401:
@@ -315,11 +358,10 @@ class HiggsClient:
                 detail = resp.json().get("detail", "")
             except Exception:
                 pass
-            if "datadome" in resp.text.lower():
+            if "datadome" in resp.text.lower() or "<html" in resp.text[:100].lower():
                 raise HiggsError(
                     "Blocked by DataDome bot protection.\n"
-                    "This usually happens with direct API calls.\n"
-                    "Try refreshing your token: higgsfield login --with-token TOKEN"
+                    "Install playwright: pip install playwright && playwright install chromium"
                 )
             raise HiggsError(f"Forbidden (403). {detail}")
 

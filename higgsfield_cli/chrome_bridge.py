@@ -151,7 +151,7 @@ def generate_via_chrome(
     if "higgsfield.ai" not in current_url:
         return None
 
-    # Navigate to the correct model page if needed
+    # Navigate to the correct model page (always reload to clear editor state)
     # Model slug to URL path mapping
     model_paths = {
         "nano-banana-2": "nano_banana_2",
@@ -164,30 +164,30 @@ def generate_via_chrome(
     path = model_paths.get(model_slug, "nano_banana_2")
     target_url = f"https://higgsfield.ai/image/{path}"
 
-    if path not in current_url:
-        _run_js(f"window.location.href = '{target_url}'")
-        time.sleep(3)
+    # Always reload to ensure clean editor state
+    _run_js(f"window.location.href = '{target_url}'")
 
-    # Clear and set prompt using execCommand (triggers React state properly)
-    _run_js("""
-        var editor = document.querySelector('[contenteditable=true]');
-        if (editor) {
-            editor.focus();
-            editor.innerHTML = '';
-            editor.dispatchEvent(new Event('input', {bubbles: true}));
-        }
-    """)
-    time.sleep(0.3)
+    # Wait for editor to be ready (poll up to 15 seconds)
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        time.sleep(1)
+        found = _run_js("document.querySelector('[contenteditable=true]') ? 'yes' : 'no'")
+        if found == "yes":
+            time.sleep(1)  # Extra settle time
+            break
 
+    # Clear editor using multiple methods for reliability
     _run_js("""
         var editor = document.querySelector('[contenteditable=true]');
         if (editor) {
             editor.focus();
             document.execCommand('selectAll', false);
             document.execCommand('delete', false);
+            editor.innerHTML = '';
+            editor.dispatchEvent(new Event('input', {bubbles: true}));
         }
     """)
-    time.sleep(0.3)
+    time.sleep(0.5)
 
     # Insert prompt text
     safe_prompt = prompt.replace("'", "\\'").replace('"', '\\"').replace("\n", " ")

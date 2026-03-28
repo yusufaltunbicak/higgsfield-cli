@@ -418,10 +418,7 @@ def delete(job_ids: tuple[str, ...], yes: bool, json_output: bool):
     for jid in job_ids:
         try:
             real_id = client._resolve_id(jid)
-            resp = client._client.delete(
-                f"/jobs/{real_id}",
-                headers={"Authorization": f"Bearer {client._token}"},
-            )
+            resp = client._delete(f"/jobs/{real_id}")
             if resp.status_code in (200, 204):
                 console.print(f"  [green]Deleted #{jid}[/green]")
                 results.append({"id": real_id, "deleted": True})
@@ -462,10 +459,7 @@ def favorite(job_ids: tuple[str, ...], json_output: bool):
             job = client.get_job(jid)
             new_state = not job.is_favourite
             real_id = client._resolve_id(jid)
-            resp = client._client.patch(
-                f"/jobs/{real_id}",
-                json={"is_favourite": new_state},
-            )
+            resp = client._patch(f"/jobs/{real_id}", json={"is_favourite": new_state})
             if resp.status_code == 200:
                 icon = "starred" if new_state else "unstarred"
                 console.print(f"  [green]#{jid} {icon}[/green]")
@@ -497,7 +491,7 @@ def favorite(job_ids: tuple[str, ...], json_output: bool):
 @click.option("-y", "--yes", is_flag=True)
 @click.option("--json", "json_output", is_flag=True, hidden=True)
 @_handle_api_error
-def batch(file: str, model: str | None, resolution: str, quality: str, aspect: str, batch_size: int, download: bool, output: str, delay: float, yes: bool, json_output: bool):
+def batch(file: str, model: str | None, resolution: str, quality: str, aspect: str, batch: int, download: bool, output: str, delay: float, yes: bool, json_output: bool):
     """Generate images from a file of prompts (one per line).
 
     Empty lines and lines starting with # are skipped.
@@ -527,8 +521,8 @@ def batch(file: str, model: str | None, resolution: str, quality: str, aspect: s
         console.print(f"\n  [bold]Batch Generate[/bold]")
         console.print(f"  Prompts: {len(prompts)}")
         console.print(f"  Model:   {model}")
-        console.print(f"  Each:    {batch_size} images, {resolution}, {aspect}")
-        console.print(f"  Total:   ~{len(prompts) * batch_size} images")
+        console.print(f"  Each:    {batch} images, {resolution}, {aspect}")
+        console.print(f"  Total:   ~{len(prompts) * batch} images")
         console.print()
         if not click.confirm("  Proceed?", default=True):
             return
@@ -545,7 +539,7 @@ def batch(file: str, model: str | None, resolution: str, quality: str, aspect: s
                 resolution=resolution,
                 quality=quality,
                 aspect_ratio=aspect,
-                batch_size=batch_size,
+                batch_size=batch,
             )
             ids = resp.all_job_ids
             all_job_ids.extend(ids)

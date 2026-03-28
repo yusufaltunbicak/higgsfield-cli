@@ -35,6 +35,7 @@ higgsfield = "higgsfield_cli.cli:cli"
 
 [project.optional-dependencies]
 chrome = ["cryptography>=41.0"]
+browser = ["playwright>=1.40"]
 dev = ["pytest>=8.0", "ruff>=0.4"]
 
 [tool.pytest.ini_options]
