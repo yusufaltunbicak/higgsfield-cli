@@ -36,7 +36,7 @@ pip install -e ".[chrome]"
 - Token lifetime is 60 seconds; Clerk refresh extends this indefinitely.
 - `HIGGSFIELD_TOKEN` env var is supported for CI/scripting.
 - Token cached at `~/.cache/higgsfield-cli/token.json` with `chmod 600`.
-- Generate commands require Chrome with higgsfield.ai tab open (DataDome protection on POST endpoints).
+- Generate commands auto-open a background Chrome tab if needed (DataDome protection on POST endpoints). No manual action required.
 
 ```bash
 higgsfield login                          # Interactive cookie login
@@ -52,7 +52,7 @@ higgsfield whoami                         # Verify current user and credits
 4. Copy the output
 5. Run `higgsfield login` and paste
 
-After first login, read-only commands (history, credits, download, etc.) work indefinitely without Chrome. Generation commands need a higgsfield.ai tab open in Chrome.
+After first login, all commands work without manual intervention. Generation commands auto-open a silent background Chrome tab when needed for DataDome bypass.
 
 ## Command Reference
 
@@ -300,7 +300,7 @@ higgsfield history --model nano-banana-pro --max 10
 - Token expired -> auto-refresh via Clerk API (no Chrome needed).
 - `No job found for #N` -> run `higgsfield history` first to populate the ID map.
 - `Not enough credits` -> check with `higgsfield credits`, buy more at higgsfield.ai.
-- `Forbidden (403)` -> DataDome protection on generate. Ensure Chrome is open with higgsfield.ai tab.
+- `Forbidden (403)` -> DataDome protection on generate. Chrome tab is auto-opened in background; if it persists, try `higgsfield login` to refresh session.
 - HTTP 429 -> rate limit. Wait and retry.
 - `Token expired. Run: higgsfield login` -> Clerk refresh failed. Re-login with `higgsfield login`.
 
@@ -309,6 +309,6 @@ higgsfield history --model nano-banana-pro --max 10
 - Token and cookies cached with `chmod 600` (owner-only read/write).
 - Clerk client cookie saved separately for auto-refresh.
 - `generate`, `again`, `use`, `batch`, `delete`, `upscale`, `relight`, `outpaint` ask for confirmation by default (use `-y` to skip).
-- Chrome is never auto-launched; only used if already running.
+- Chrome is auto-launched silently in background when needed for generation (no window focus change).
 - Do not share or log bearer tokens.
 - Prefer `higgsfield login` over manually copying tokens.
